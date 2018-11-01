@@ -44,7 +44,7 @@ class MovableEntity(Entity):
         move_horizontal = False
         move_vertical = False
     
-        if self.x != self.destination[0]:
+        if (self.x != self.destination[0] + self.target_offset) or (self.x != self.destination[0] - self.target_offset):
             move_horizontal = True
         if self.y != self.destination[1]:
             move_vertical = True
@@ -54,18 +54,26 @@ class MovableEntity(Entity):
             move_vertical = not move_horizontal
     
         if move_horizontal:
-            if self.destination[0] - self.x > self.target_offset:
+            if 0 < self.destination[0] - self.x > self.target_offset:
                 self.move_right()
                 result = True
-            elif self.x - self.destination[0] > self.target_offset:
+            elif 0 < self.x - self.destination[0] > self.target_offset:
                 self.move_left()
                 result = True
-            elif self.destination[0] > self.x - self.target_offset:
-                self.move_left()
-                result = True
-            elif self.x < self.destination[0] + self.target_offset:
+            elif 0 < self.destination[0] - self.x < self.target_offset:
                 self.move_right()
                 result = True
+            elif 0 < self.x - self.destination[0] < self.target_offset:
+                self.move_right()
+                result = True
+            elif self.target_offset > 0:
+                
+                if (self.destination[0] - self.target_offset) <= self.x <= self.destination[0]:
+                    self.move_left()
+                    result = True
+                elif self.destination[0] < self.x < (self.destination[0] + self.target_offset):
+                    self.move_right()
+                    result = True
 
             return result
         

@@ -14,7 +14,8 @@ class App:
 
         self.coins = []
         
-        for i in range(0, randint(10, 15)):
+        #for i in range(0, randint(10, 15)):
+        for i in range(0, 1):
             coin = MovableEntity(randint(7, 200), randint(7, 130), 7, 7, Colour.YELLOW, 5, False, self.coins)
             coin.destination = (240/2, 136/2)
 
@@ -24,6 +25,7 @@ class App:
         coin.target_offset = 14
         coin.target = self.player.id
         coin.movement_type = MovementType.CHASE
+        coin.base_colour = Colour.ORANGE.value
 
         pyxel.run(self.update, self.draw)
 
