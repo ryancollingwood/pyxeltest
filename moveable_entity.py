@@ -152,7 +152,8 @@ class MovableEntity(Entity):
         destination_bounds = (target_value - self.target_offset, target_value + self.target_offset)
         
         if current_value != target_value and (
-                (current_value != destination_bounds[0]) or (current_value != destination_bounds[1])):
+                (current_value != destination_bounds[0]) or (current_value != destination_bounds[1])
+                ):
             return True, destination_bounds
         
         return False, destination_bounds
@@ -211,14 +212,17 @@ class MovableEntity(Entity):
     
         directions = [self.middle]
         
-        if direction in [MovementDirection.NORTH_WEST, MovementDirection.NORTH, MovementDirection.NORTH_EAST]:
-            directions = [self.top_left, self.top_right, self.top_middle]
-        elif direction in [MovementDirection.WEST]:
-            directions = [self.top_left, self.bottom_left, self.middle_left]
-        elif direction in [MovementDirection.EAST]:
-            directions = [self.top_right, self.bottom_right, self.middle_right]
-        elif direction in [MovementDirection.SOUTH_WEST, MovementDirection.SOUTH, MovementDirection.SOUTH_EAST]:
-            directions = [self.bottom_right, self.bottom_left, self.bottom_middle]
+        if direction == MovementDirection.NORTH:
+            directions = [self.top_middle]
+        elif direction == MovementDirection.WEST:
+            #directions = [self.top_left, self.bottom_left, self.middle_left]
+            directions = [self.middle_left]
+        elif direction == MovementDirection.EAST:
+            #directions = [self.top_right, self.bottom_right, self.middle_right]
+            directions = [self.middle_right]
+        elif direction == MovementDirection.SOUTH:
+            #directions = [self.bottom_right, self.bottom_left, self.bottom_middle]
+            directions = [self.bottom_middle]
             
         for position in directions:
             start_x = position[0]
@@ -234,12 +238,15 @@ class MovableEntity(Entity):
 
     def check_collision_point(self, search_x, search_y):
         
+        # remove self from grid so we dont
+        # find ourselves
         Entity.grid - self.id
 
         collision_items = Entity.grid.query(
-            search_x, search_y, k = 1, distance_upper_bound = 8
+            search_x, search_y, k = 3,
             )
     
+        # now add self back to grid
         self.refresh_dimensions()
 
         if collision_items is not None:
@@ -250,10 +257,13 @@ class MovableEntity(Entity):
                 if collision_item[0]:
                     # TODO remove hard code
                     
-                    #if collision_item[1] >= 5:
-                    #    continue
+                    if collision_item[1] >= 5:
+                        continue
                     if collision_item[0] != self.id:
                         other_entity = Entity.all[collision_item[0]]
+                        if other_entity.on_collide is not None:
+                            other_entity.on_collide(other_entity, self)
+
                         if other_entity.is_solid:
                             return [other_entity]    
         return []

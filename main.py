@@ -35,7 +35,7 @@ class App:
 #   ##  ####   #             #
 #   #   #      #             #
 #   # ### ###  ###  ######## #
-#   # #   # #    ## #      # #
+#   # #     #    ## #      # #
 #   # # ### ###     #  ### # #
 #   # #       #######    # # #
 #   # # ###############  # # #
@@ -77,11 +77,23 @@ class App:
 
     def add_speed_down(self, row, column):
         x, y = self.grid.get_pixel_center(row, column)
-        Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.RED, 5, False, self.items)
+        item = Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.RED, 5, False, self.items)
+        item.on_collide = self.apply_speed_down
 
     def add_speed_up(self, row, column):
         x, y = self.grid.get_pixel_center(row, column)
-        Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.LIGHT_BLUE, 5, False, self.items)
+        item = Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.LIGHT_BLUE, 5, False, self.items)
+        item.on_collide = self.apply_speed_up
+
+    def apply_speed_up(self, apply_from, apply_to):
+        apply_to.tick_rate -= 1
+        self.grid - apply_from.id
+        self.items.remove(apply_from)
+
+    def apply_speed_down(self, apply_from, apply_to):
+        apply_to.tick_rate += 1
+        self.grid - apply_from.id
+        self.items.remove(apply_from)
 
     def start_sheep(self):
         self.sheep.target_offset = App.tile_size * 2
@@ -118,13 +130,17 @@ class App:
     def draw(self):
         pyxel.cls(0)
 
-        for item in self.items:
+        items = self.items.copy()
+        for item in items:
             item.think()
             item.draw()
+        del items
 
-        for npc in self.npcs:
+        npcs = self.npcs.copy()
+        for npc in npcs:
             npc.think()
             npc.draw()
+        del npcs
             
         draw_wall_ids = False
 
@@ -140,10 +156,12 @@ class App:
 
         pyxel.text(
             40, 10, 
-            str(self.player.movement_direction) + " - " + str(self.player.tick_rate) + " " + \
-            game_state.debug_message, 
+            "herder speed: {a} - sheep speed: {b}".format(
+                a = self.player.tick_rate,
+                b = self.sheep.tick_rate
+            ), 
             Colour.PINK.value
-            )
+        )
 
         self.player.draw()
 
@@ -151,6 +169,5 @@ class App:
         if draw_grid:
             for point in self.grid.flat_pixel_positions:
                 pyxel.pix(point[1], point[0], Colour.PINK.value)
-
 
 App()

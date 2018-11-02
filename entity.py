@@ -27,6 +27,7 @@ class Entity:
         self.last_tick = pyxel.frame_count
         self.tick_rate = tick_rate
         self.is_solid = is_solid
+        self.on_collide = None
 
         self.top_left = None
         self.top_right = None
