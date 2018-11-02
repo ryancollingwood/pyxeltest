@@ -62,6 +62,8 @@ class MovableEntity(Entity):
             
         if self.destination is None:
             return result
+
+        move_both = False
     
         move_horizontal, destination_offset_boundary_x = self.is_within_destination_and_offset(
             self.x, self.destination[0]
@@ -71,18 +73,32 @@ class MovableEntity(Entity):
         )
     
         if move_horizontal and move_vertical:
+            move_both = True
             move_horizontal = choice([True, False])
             move_vertical = not move_horizontal
     
         if move_horizontal:
-            result = self.move_in_plane(self.x, self.destination[0], destination_offset_boundary_x, self.move_left,
-                                        self.move_right)
+            result = self.move_in_plane(
+                self.x, self.destination[0], destination_offset_boundary_x, self.move_left, self.move_right
+                )
+
+            if not result and move_both:
+                result = self.move_in_plane(
+                    self.y, self.destination[1], destination_offset_boundary_y, self.move_up, self.move_down
+                    )
 
             return result
         
         elif move_vertical:
-            result = self.move_in_plane(self.y, self.destination[1], destination_offset_boundary_y, self.move_up,
-                                        self.move_down)
+            result = self.move_in_plane(
+                self.y, self.destination[1], destination_offset_boundary_y, self.move_up, self.move_down
+                )
+            
+            if not result and move_both:
+                result = self.move_in_plane(
+                    self.x, self.destination[0], destination_offset_boundary_x, self.move_left, self.move_right
+                    )
+
         
             return result
         else:
@@ -110,23 +126,19 @@ class MovableEntity(Entity):
         result = False
         
         if current < destination_offset_boundary[0]:
-            increase_position()
-            result = True
+            result = increase_position()
         elif destination_offset_boundary[0] < current < destination:
-            decrease_position()
-            result = True
+            result = decrease_position()
         elif current > destination_offset_boundary[1]:
-            decrease_position()
-            result = True
+            result = decrease_position()
         elif destination < current < destination_offset_boundary[1]:
-            increase_position()
-            result = True
+            result = increase_position()
         elif self.target_offset > 0 and current == destination:
             # tie breaking if we're exactly on our target but we need to be at an offset
             if choice([True, False]):
-                decrease_position()
+                result = decrease_position()
             else:
-                increase_position()
+                result = increase_position()
                 
         return result
 
@@ -150,28 +162,28 @@ class MovableEntity(Entity):
         Move left on screen
         :return:
         """
-        self.move_in_direction(-1, 0)
+        return self.move_in_direction(-1, 0)
 
     def move_right(self):
         """
         Move right on screen
         :return:
         """
-        self.move_in_direction(1, 0)
+        return self.move_in_direction(1, 0)
 
     def move_up(self):
         """
         Move up on screen
         :return:
         """
-        self.move_in_direction(0, -1)
+        return self.move_in_direction(0, -1)
 
     def move_down(self):
         """
         Move down on screen
         :return:
         """
-        self.move_in_direction(0, 1)
+        return self.move_in_direction(0, 1)
 
     def move_in_direction(self, x_magnitude, y_magnitude):
         """
@@ -181,6 +193,7 @@ class MovableEntity(Entity):
         :param y_magnitude:
         :return:
         """
+        result = False
         new_direction = self.get_direction(x_magnitude, y_magnitude)
     
         collide_entities = self.collide_entities(new_direction)
@@ -189,8 +202,10 @@ class MovableEntity(Entity):
             self.movement_direction = new_direction
             self.x = (self.x + x_magnitude) % pyxel.width
             self.y = (self.y + y_magnitude) % pyxel.width
+            result = True
             
         self.refresh_dimensions()
+        return result
 
     def collide_entities(self, direction: MovementDirection):
     
@@ -218,22 +233,29 @@ class MovableEntity(Entity):
         return []
 
     def check_collision_point(self, search_x, search_y):
-        nearest_x, nearest_y = Entity.grid.get_pos_for_pixels(self.x, self.y)
-        game_state.debug_message = str([nearest_x, nearest_y])
+        
+        Entity.grid - self.id
 
-        collision_items, collision_distances = Entity.grid.query(
-            search_x, search_y, k = 3, distance_upper_bound = 8)
+        collision_items = Entity.grid.query(
+            search_x, search_y, k = 1, distance_upper_bound = 8
+            )
     
+        self.refresh_dimensions()
+
         if collision_items is not None:
+            # print(collision_items)
             for collision_item in collision_items:
-                if collision_item:
-                    if collision_item != self.id:
-                        other_entity = Entity.all[collision_item]
+                if not collision_item:
+                    continue
+                if collision_item[0]:
+                    # TODO remove hard code
+                    
+                    #if collision_item[1] >= 5:
+                    #    continue
+                    if collision_item[0] != self.id:
+                        other_entity = Entity.all[collision_item[0]]
                         if other_entity.is_solid:
-                            return [other_entity]
-                    else:
-                        return []
-    
+                            return [other_entity]    
         return []
 
     @staticmethod

@@ -23,8 +23,8 @@ class Grid():
         self.tile_size = tile_size
         self.half_tile_size = (self.tile_size / 2.0)
         
-        x_mesh = (x_mesh + 1) * self.half_tile_size
-        y_mesh = (y_mesh + 1) * self.half_tile_size
+        x_mesh = ((x_mesh + 1) * self.tile_size) - self.half_tile_size 
+        y_mesh = ((y_mesh + 1) * self.tile_size) - self.half_tile_size
         
         # let's persist center positions
         pixel_center_positions = np.squeeze(np.dstack([y_mesh.ravel(), x_mesh.ravel()]))
@@ -123,8 +123,8 @@ class Grid():
         :param column:
         :return:
         """
-        return self.map_pixel_center_positions[row][column]
-
+        result = self.map_pixel_center_positions[row][column]
+        return (result[1], result[0])
     
     def get_pos_for_pixels(self, x, y):
         """
@@ -160,12 +160,15 @@ class Grid():
             try:
                 # returning into a flattened array so that we there's only
                 # one result we still have an array
-                return np.array(self.data[query_result[1]]).flatten(), query_result[0]
+                return list(zip(
+                    np.array(self.data[query_result[1]]).flatten(), 
+                    np.array(query_result[0]).flatten()
+                ))
             except IndexError:
                 pass
-        return None, None
-        
+        return None, None       
     
+
     def get_x_y_distances(self, x, y):
         """
         Get the distances for rows and columns from the given x, y pixel point.

@@ -21,6 +21,8 @@ class Entity:
         self.y = y
         self.height = height
         self.width = width
+        self.half_height = height / 2
+        self.half_width = width / 2
         self.base_colour = base_colour.value
         self.last_tick = pyxel.frame_count
         self.tick_rate = tick_rate
@@ -35,6 +37,7 @@ class Entity:
         self.bottom_right = None
         self.top_middle = None
         self.bottom_middle = None
+        self.grid_pixels = None
         
         self.refresh_dimensions()
         
@@ -43,20 +46,18 @@ class Entity:
             
         Entity.all[self.id] = self
     
-    def refresh_dimensions(self):
-        half_height = self.height / 2
-        half_width = self.width / 2
-        
-        self.top_left = (self.x - half_width, self.y - half_height)
-        self.top_middle = (self.x, self.y - half_height)
-        self.top_right = (self.x + half_width, self.y - half_height)
-        self.bottom_left = (self.x - half_width, self.y + half_height)
-        self.bottom_middle = (self.x, self.y + half_height)
-        self.bottom_right = (self.x + half_width, self.y + half_height)
-        self.middle_right = (self.x + half_width, self.y)
-        self.middle_left = (self.x - half_width, self.y)
+    def refresh_dimensions(self):        
+        self.top_left = (self.x - self.half_width, self.y - self.half_height)
+        self.top_middle = (self.x, self.y - self.half_height)
+        self.top_right = (self.x + self.half_width, self.y - self.half_height)
+        self.bottom_left = (self.x - self.half_width, self.y + self.half_height)
+        self.bottom_middle = (self.x, self.y + self.half_height)
+        self.bottom_right = (self.x + self.half_width, self.y + self.half_height)
+        self.middle_right = (self.x + self.half_width, self.y)
+        self.middle_left = (self.x - self.half_width, self.y)
         self.middle = (self.x, self.y)
-        
+        self.grid_pixels = Entity.grid.get_pos_for_pixels(self.x, self.y)
+
         Entity.grid[self.middle] = self.id
 
     def can_think(self):
@@ -74,9 +75,10 @@ class Entity:
         return True
         
     def draw(self):
+        
         pyxel.rect(
-            self.x, self.y,
-            self.x + self.width, self.y + self.height,
+            self.x - self.half_width, self.y - self.half_height,
+            self.x + self.half_width, self.y + self.half_height,
             self.base_colour
             )
 

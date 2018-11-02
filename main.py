@@ -11,88 +11,146 @@ class App:
     
     width = 240
     height = 144
+    tile_size = 8
     
     def __init__(self):
         pyxel.init(App.width, App.height, caption = "PyxelTest", fps = 60, scale = 4)
 
-        self.grid = Grid(App.width, App.height, 8)
+        self.grid = Grid(App.width, App.height, App.tile_size)
         
         Entity.grid = self.grid
         
-        self.ghosts = []
+        self.npcs = []
+        self.items = []
         self.walls = []
         
-        self.spawn_walls()
-        ghost = self.spawn_ghosts()
+        wall_text = """
+##############################
+##############################
+#                            #
+#            .  &            #
+#                    *       #
+#                    @       #
+#          #####             #
+#   ##  ####   #             #
+#   #   #      #             #
+#   # ### ###  ###  ######## #
+#   # #   # #    ## #      # #
+#   # # ### ###     #  ### # #
+#   # #       #######    # # #
+#   # # ###############  # # #
+#   # #                  # # #
+#   # #################### # #
+#   #                      # #
+##############################
+        """.strip()
 
-        self.player = MovableEntity(10, 10, 8, 8, Colour.GREEN, 5)
+        wall_lines = wall_text.split('\n')
+        for row_index, row_value in enumerate(wall_lines):            
+            for col_index, col_value in enumerate(row_value):
+                if col_value == "#":
+                    self.add_wall(row_index, col_index)
+                elif col_value == "@":
+                    self.add_player(row_index, col_index)
+                elif col_value == "&":
+                    self.add_sheep(row_index, col_index)
+                elif col_value == ".":
+                    self.add_speed_down(row_index, col_index)
+                elif col_value == "*":
+                    self.add_speed_up(row_index, col_index)
+
+        self.start_sheep()
 
         self.debug_message = ""
-
-        self.make_a_chasing_ghost(ghost)
-
+        
         pyxel.run(self.update, self.draw)
 
-    def make_a_chasing_ghost(self, ghost):
-        ghost.target_offset = 14
-        ghost.target = self.player.id
-        # make the last ghost chase the player
-        ghost.movement_type = MovementType.CHASE
-        ghost.base_colour = Colour.ORANGE.value
+    def add_player(self, row, column):
+        x, y = self.grid.get_pixel_center(row, column)
+        print("player:", x, y)
+        self.player = MovableEntity(x, y, App.tile_size-2, App.tile_size-2, Colour.GREEN, 5)
 
-    def spawn_ghosts(self):
-        for i in range(0, randint(10, 15)):
-            ghost = MovableEntity(
-                randint(8, App.width),
-                randint(8, App.height),
-                8, 8, Colour.YELLOW,
-                5, False,
-                self.ghosts
-            )
-            # converge on the middle to begin with
-            ghost.destination = (App.width / 2, App.height / 2)
-        return ghost
+    def add_sheep(self, row, column):
+        x, y = self.grid.get_pixel_center(row, column)
+        print("sheep:", x, y)
+        self.sheep = MovableEntity(x, y, App.tile_size-2, App.tile_size-2, Colour.WHITE, 5, False, self.npcs)
 
-    def spawn_walls(self):
-        for i in range(0, randint(10, 15)):
-            x, y = self.grid.get_pos_for_pixels(
-                randint(8, App.width),
-                randint(8, App.height)
-            )
-            Entity(
-                x,
-                y,
-                8, 8, Colour.BROWN,
-                5, True,
-                self.walls
-            )
+    def add_speed_down(self, row, column):
+        x, y = self.grid.get_pixel_center(row, column)
+        Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.RED, 5, False, self.items)
+
+    def add_speed_up(self, row, column):
+        x, y = self.grid.get_pixel_center(row, column)
+        Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.LIGHT_BLUE, 5, False, self.items)
+
+    def start_sheep(self):
+        self.sheep.target_offset = App.tile_size * 2
+        self.sheep.target = self.player.id
+        self.sheep.movement_type = MovementType.CHASE
+
+    def add_wall(self, row, column):
+        # add_at_grid_position
+        x, y = self.grid.get_pixel_center(row, column)
+        Entity(
+            x,
+            y,
+            App.tile_size, App.tile_size, Colour.BROWN,
+            5, True,
+            self.walls
+        )
+
 
     def update(self):
-        if pyxel.btnp(pyxel.constants.KEY_LEFT, 5, 5):
+        if pyxel.btnp(pyxel.constants.KEY_LEFT, self.player.tick_rate, self.player.tick_rate):
             self.player.move_left()
-        elif pyxel.btnp(pyxel.constants.KEY_RIGHT, 5, 5):
+        elif pyxel.btnp(pyxel.constants.KEY_RIGHT, self.player.tick_rate, self.player.tick_rate):
             self.player.move_right()
-        elif pyxel.btnp(pyxel.constants.KEY_UP, 5, 5):
+        elif pyxel.btnp(pyxel.constants.KEY_UP, self.player.tick_rate, self.player.tick_rate):
             self.player.move_up()
-        elif pyxel.btnp(pyxel.constants.KEY_DOWN, 5, 5):
+        elif pyxel.btnp(pyxel.constants.KEY_DOWN, self.player.tick_rate, self.player.tick_rate):
             self.player.move_down()
+        elif pyxel.btnr(pyxel.constants.KEY_PERIOD):
+            self.player.tick_rate -= 1
+        elif pyxel.btnr(pyxel.constants.KEY_COMMA):
+            self.player.tick_rate += 1
+
 
     def draw(self):
         pyxel.cls(0)
-        
-        self.player.draw()
-        
-        for coin in self.ghosts:
-            coin.think()
-            coin.draw()
+
+        for item in self.items:
+            item.think()
+            item.draw()
+
+        for npc in self.npcs:
+            npc.think()
+            npc.draw()
             
+        draw_wall_ids = False
+
         for wall in self.walls:
             wall.draw()
+            if draw_wall_ids:
+                pyxel.text(
+                    wall.top_left[0], 
+                    wall.top_left[1], 
+                    str(wall.id), 
+                    Colour.BLACK.value
+                    )
 
-        pyxel.text(40, 10, str(self.player.movement_direction) + " - " + game_state.debug_message, Colour.PINK.value)
+        pyxel.text(
+            40, 10, 
+            str(self.player.movement_direction) + " - " + str(self.player.tick_rate) + " " + \
+            game_state.debug_message, 
+            Colour.PINK.value
+            )
 
-        #for point in self.grid.flat_pixel_positions:
-        #    pyxel.pix(point[1], point[0], Colour.PINK.value)
+        self.player.draw()
+
+        draw_grid = False
+        if draw_grid:
+            for point in self.grid.flat_pixel_positions:
+                pyxel.pix(point[1], point[0], Colour.PINK.value)
 
 
 App()
