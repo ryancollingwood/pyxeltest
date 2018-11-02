@@ -5,6 +5,7 @@ from random import choice, randint
 from moveable_entity import MovementType
 from grid import Grid
 from entity import Entity
+import game_state
 
 class App:
     
@@ -22,13 +23,13 @@ class App:
         self.walls = []
         
         self.spawn_walls()
-        #ghost = self.spawn_ghosts()
+        ghost = self.spawn_ghosts()
 
         self.player = MovableEntity(10, 10, 8, 8, Colour.GREEN, 5)
 
-        self.wall = Entity(1, 1, 8, 8, Colour.BROWN, 5)
+        self.debug_message = ""
 
-        #self.make_a_chasing_ghost(ghost)
+        self.make_a_chasing_ghost(ghost)
 
         pyxel.run(self.update, self.draw)
 
@@ -54,9 +55,13 @@ class App:
 
     def spawn_walls(self):
         for i in range(0, randint(10, 15)):
-            Entity(
+            x, y = self.grid.get_pos_for_pixels(
                 randint(8, App.width),
-                randint(8, App.height),
+                randint(8, App.height)
+            )
+            Entity(
+                x,
+                y,
                 8, 8, Colour.BROWN,
                 5, True,
                 self.walls
@@ -76,7 +81,6 @@ class App:
         pyxel.cls(0)
         
         self.player.draw()
-        self.wall.draw()
         
         for coin in self.ghosts:
             coin.think()
@@ -84,6 +88,11 @@ class App:
             
         for wall in self.walls:
             wall.draw()
+
+        pyxel.text(40, 10, str(self.player.movement_direction) + " - " + game_state.debug_message, Colour.PINK.value)
+
+        #for point in self.grid.flat_pixel_positions:
+        #    pyxel.pix(point[1], point[0], Colour.PINK.value)
 
 
 App()

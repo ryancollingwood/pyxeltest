@@ -124,6 +124,7 @@ class Grid():
         :return:
         """
         return self.map_pixel_center_positions[row][column]
+
     
     def get_pos_for_pixels(self, x, y):
         """
@@ -156,8 +157,13 @@ class Grid():
     def query(self, x, y, k = 1, distance_upper_bound = np.inf):
         query_result = self.query_tree(x, y, k = k, distance_upper_bound = distance_upper_bound)
         if query_result:
-            return self.data[query_result[1]]
-        return None
+            try:
+                # returning into a flattened array so that we there's only
+                # one result we still have an array
+                return np.array(self.data[query_result[1]]).flatten(), query_result[0]
+            except IndexError:
+                pass
+        return None, None
         
     
     def get_x_y_distances(self, x, y):
