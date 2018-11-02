@@ -11,6 +11,18 @@ class MovementType(Enum):
     CHASE = 2
 
 
+class MovementDirection(Enum):
+    SOUTH_WEST = 1
+    SOUTH = 2
+    SOUTH_EAST = 3
+    WEST = 4
+    NONE = 5
+    EAST = 6
+    NORTH_WEST = 7
+    NORTH = 8
+    NORTH_EAST = 9
+
+
 class MovableEntity(Entity):
     
     def __init__(self,
@@ -26,6 +38,7 @@ class MovableEntity(Entity):
         self.movement_type = movement_type
         self.target = target
         self.target_offset = target_offset
+        self.movement_direction = MovementDirection.NONE
         
     def think(self):
         """
@@ -136,26 +149,116 @@ class MovableEntity(Entity):
         Move left on screen
         :return:
         """
-        self.x = (self.x - 1) % pyxel.width
+        self.move_in_direction(-1, 0)
 
     def move_right(self):
         """
         Move right on screen
         :return:
         """
-        self.x = (self.x + 1) % pyxel.width
+        self.move_in_direction(1, 0)
 
     def move_up(self):
         """
         Move up on screen
         :return:
         """
-        self.y = (self.y - 1) % pyxel.width
+        self.move_in_direction(0, -1)
 
     def move_down(self):
         """
         Move down on screen
         :return:
         """
-        self.y = (self.y + 1) % pyxel.width
+        self.move_in_direction(0, 1)
+
+    def move_in_direction(self, x_magnitude, y_magnitude):
+        """
+        If we aren't going to collide with something solid move
+        in the specified direction
+        :param x_magnitude:
+        :param y_magnitude:
+        :return:
+        """
+        new_direction = self.get_direction(x_magnitude, y_magnitude)
+    
+        collide_entities = self.collide_entities(new_direction)
+        if collide_entities is not None and len(collide_entities) == 0:
+            Entity.grid - self.id
+            self.movement_direction = new_direction
+            self.x = (self.x + x_magnitude) % pyxel.width
+            self.y = (self.y + y_magnitude) % pyxel.width
+            
+        self.refresh_dimensions()
+
+    def collide_entities(self, direction: MovementDirection):
+    
+        directions = [self.middle]
+        
+        if direction in [MovementDirection.NORTH_WEST, MovementDirection.NORTH, MovementDirection.NORTH_EAST]:
+            directions = [self.top_left, self.top_right, self.top_middle, self.middle]
+        elif direction in [MovementDirection.WEST]:
+            directions = [self.top_left, self.bottom_left, self.middle_left, self.middle]
+        elif direction in [MovementDirection.EAST]:
+            directions = [self.top_right, self.bottom_right, self.middle_right, self.middle]
+        elif direction in [MovementDirection.SOUTH_WEST, MovementDirection.SOUTH, MovementDirection.SOUTH_EAST]:
+            directions = [self.bottom_right, self.bottom_left, self.bottom_middle, self.middle]
+            
+        for position in directions:
+            start_x = position[0]
+            start_y = position[1]
+        
+            collision_item = self.check_collision_point(start_x, start_y)
+        
+            if len(collision_item) > 0:
+                return collision_item
+    
+        return []
+
+    def check_collision_point(self, search_x, search_y):
+        collision_items = Entity.grid.query(search_x, search_y, k = 3, distance_upper_bound = self.width)
+    
+        for collision_item in collision_items:
+            if collision_item:
+                if collision_item != self.id:
+                    other_entity = Entity.all[collision_item]
+                    if other_entity.is_solid:
+                        return [other_entity]
+                else:
+                    return []
+    
+        return []
+
+    @staticmethod
+    def get_direction(x_magnitude, y_magnitude):
+        """
+        For a given change in x,y what's the direction
+        :param x_magnitude:
+        :param y_magnitude:
+        :return:
+        """
+        new_direction = MovementDirection.NONE
+        if x_magnitude == 0:
+            if y_magnitude < 0:
+                new_direction = MovementDirection.NORTH
+            elif y_magnitude > 0:
+                new_direction = MovementDirection.SOUTH
+        elif y_magnitude == 0:
+            if x_magnitude < 0:
+                new_direction = MovementDirection.WEST
+            elif x_magnitude > 0:
+                new_direction = MovementDirection.EAST
+        else:
+            if y_magnitude < 0:
+                if x_magnitude > 0:
+                    new_direction = MovementDirection.NORTH_EAST
+                elif x_magnitude < 0:
+                    new_direction = MovementDirection.NORTH_WEST
+            elif y_magnitude > 0:
+                if x_magnitude > 0:
+                    new_direction = MovementDirection.SOUTH_EAST
+                elif x_magnitude < 0:
+                    new_direction = MovementDirection.SOUTH_WEST
+        return new_direction
+
 

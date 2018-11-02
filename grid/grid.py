@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from scipy.spatial import KDTree
+from typing import Tuple
 
 
 class Grid():
@@ -27,6 +28,7 @@ class Grid():
         
         # let's persist center positions
         pixel_center_positions = np.squeeze(np.dstack([y_mesh.ravel(), x_mesh.ravel()]))
+        
         # property `map_pixel_center_positions` is for assisting human lookups of the grid
         self.map_pixel_center_positions = np.squeeze(np.reshape(pixel_center_positions, (y_max, x_max, 2)))
         
@@ -35,14 +37,84 @@ class Grid():
         flat_pixel_positions = pixel_center_positions.flatten()
         self.flat_pixel_positions = np.reshape(flat_pixel_positions, (int(len(flat_pixel_positions) / 2), -1))
         
+        # for data storage in our grid - initialised to 0s
+        self.data = np.zeros(y_max * x_max)
+        
         # to find a position based on pixel position we'll use the scipy.spatial.KDTree data type
         self.tree = KDTree(self.flat_pixel_positions)
         
         # let's keep the last row, column values to minimise repeated lookups
-        self.last_row = None
-        self.last_column = None
+        self.last_x = None
+        self.last_y = None
         
-        #
+        # let's keep the last x and y distances
+        self.last_x_distances = None
+        self.last_y_distances = None
+    
+    def __getitem__(self, item: Tuple[int, int]):
+        """
+        Get the data stored nearest to x, y
+        :param item: Tuple[int, int]
+        :return:
+        """
+        x = item[0]
+        y = item[1]
+            
+        query_result = self.query_tree(x, y)
+        
+        if not query_result:
+            raise ValueError(f"Pixel positions not found in grid! {x}, {y}")
+        
+        # query_result[0] - The distances to the nearest neighbour
+        # query_result[1] - The locations of the neighbours
+        return self.data[query_result[1]]
+    
+    def __setitem__(self, key: Tuple[int, int], value):
+        """
+        Set the data stored nearest to x, y
+        :param key:
+        :param value:
+        :return:
+        """
+        x = key[0]
+        y = key[1]
+        query_result = self.query_tree(x, y)
+        
+        if not query_result:
+            raise ValueError(f"Pixel positions not found in grid! {x}, {y}")
+        
+        # query_result[0] - The distances to the nearest neighbour
+        # query_result[1] - The locations of the neighbours
+        self.data[query_result[1]] = value
+        return
+    
+    def __sub__(self, item):
+        """
+        Remove all occurances of an item from the data layer
+        :param item:
+        :return:
+        """
+        matches = np.where(self.data == item)
+        self.data[matches] = 0.0
+        
+    def __add__(self, other: Tuple[int, int, int]):
+        """
+        Add to data layer, expected to be a Tuple
+        :param other: (data_to_be_addded, at_x, at_y)
+        :return:
+        """
+        self.__setitem__((other[1], other[2]), other[0])
+    
+    def convert_position_to_pixels(self, row, column):
+        """
+        Convert a row, column to y, x (respective) values
+        :param row:
+        :param column:
+        :return:
+        """
+        x = (column + 1) * self.half_tile_size
+        y = (row + 1) * self.half_tile_size
+        return x, y
     
     def get_pixel_center(self, row, column):
         """
@@ -60,13 +132,33 @@ class Grid():
         :param y:
         :return:
         """
-        query_result = self.tree.query([y, x])
+        query_result = self.query_tree(x, y)
         if not query_result:
             raise ValueError(f"Pixel positions not found in grid! {x}, {y}")
         
         # query_result[0] - The distances to the nearest neighbour
         # query_result[1] - The locations of the neighbours
         return self.flat_pixel_positions[query_result[1]]
+    
+    def query_tree(self, x, y, k = 1, distance_upper_bound = np.inf):
+        """
+        Get the data in our grid at the specified pixel position
+        :param x:
+        :param y:
+        :param k: (optional) The number of nearest neighbors to return.
+        :return:
+        """
+        # query_result[0] - The distances to the nearest neighbour
+        # query_result[1] - The locations of the neighbours
+        query_result = self.tree.query([y, x], k = k, distance_upper_bound = distance_upper_bound)
+        return query_result
+    
+    def query(self, x, y, k = 1, distance_upper_bound = np.inf):
+        query_result = self.query_tree(x, y, k = k, distance_upper_bound = distance_upper_bound)
+        if query_result:
+            return self.data[query_result[1]]
+        return None
+        
     
     def get_x_y_distances(self, x, y):
         """
@@ -77,8 +169,19 @@ class Grid():
         :param y:
         :return:
         """
-        y_distances = self.flat_pixel_positions[:, 0] - y
-        x_distances = self.flat_pixel_positions[:, 1] - x
+        if x == self.last_x:
+            x_distances = self.last_x_distances
+        else:
+            self.last_x = x
+            self.last_x_distances = self.flat_pixel_positions[:, 1] - x
+            x_distances = self.last_x_distances
+        
+        if y == self.last_y:
+            y_distances = self.last_y_distances
+        else:
+            self.last_y = y
+            self.last_y_distances = self.flat_pixel_positions[:, 0] - y
+            y_distances = self.last_y_distances
         
         return y_distances, x_distances
     
