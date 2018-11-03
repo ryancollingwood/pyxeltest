@@ -243,29 +243,30 @@ class MovableEntity(Entity):
         Entity.grid - self.id
 
         collision_items = Entity.grid.query(
-            search_x, search_y, k = 3,
+            search_x, search_y, k = 8,
             )
     
         # now add self back to grid
-        self.refresh_dimensions()
-
+        Entity.grid[self.x, self.x, self.id]
+ 
         if collision_items is not None:
-            # print(collision_items)
-            for collision_item in collision_items:
-                if not collision_item:
-                    continue
+            print(self.id, collision_items)
+            # todo probably a list comprehension here         
+            for i, collision_item in enumerate(collision_items):
+                
                 if collision_item[0]:
-                    # TODO remove hard code
-                    
-                    if collision_item[1] >= 5:
+                    if collision_item[0] == 0:
+                        continue
+                    if collision_item[1] > self.width:
                         continue
                     if collision_item[0] != self.id:
-                        other_entity = Entity.all[collision_item[0]]
-                        if other_entity.on_collide is not None:
-                            other_entity.on_collide(other_entity, self)
+                        if collision_item[0] in Entity.all: 
+                            other_entity = Entity.all[collision_item[0]]
+                            if other_entity.on_collide is not None:
+                                other_entity.on_collide(other_entity, self)
 
-                        if other_entity.is_solid:
-                            return [other_entity]    
+                            if other_entity.is_solid and i == 0:
+                                return [other_entity]   
         return []
 
     @staticmethod

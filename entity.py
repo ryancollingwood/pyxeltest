@@ -47,6 +47,17 @@ class Entity:
             
         Entity.all[self.id] = self
     
+    def __str__(self):
+        return "{id} - {x},{y} - {colour}".format(
+            id = self.id,
+            x = self.x,
+            y = self.y,
+            colour = self.base_colour
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
     def refresh_dimensions(self):        
         self.top_left = (self.x - self.half_width, self.y - self.half_height)
         self.top_middle = (self.x, self.y - self.half_height)
@@ -59,7 +70,49 @@ class Entity:
         self.middle = (self.x, self.y)
         self.grid_pixels = Entity.grid.get_pos_for_pixels(self.x, self.y)
 
+        # again check for collision
+        existing_entity_id = Entity.grid[self.middle] 
+        if existing_entity_id != self.id:
+            self.collide(existing_entity_id)
+
         Entity.grid[self.middle] = self.id
+
+    def collide(self, other_id):
+        if other_id != self.id:
+            if other_id in Entity.all: 
+                other_entity = Entity.all[other_id]
+                if other_entity.on_collide is not None:
+                    other_entity.on_collide(other_entity, self)
+                if other_entity.is_solid:
+                    return [other_entity]
+        return []
+
+    def check_collision_point(self, search_x, search_y):
+        
+        # remove self from grid so we dont
+        # find ourselves
+        Entity.grid - self.id
+
+        collision_items = Entity.grid.query(
+            search_x, search_y, k = 2,
+            )
+    
+        # now add self back to grid
+        Entity.grid[self.x, self.x, self.id]
+ 
+        if collision_items is not None:
+            print(self.id, collision_items)
+            # todo probably a list comprehension here         
+            for i, collision_item in enumerate(collision_items):
+                
+                if collision_item[0]:
+                    if collision_item[0] == 0:
+                        continue
+                    if collision_item[1] > self.width:
+                        continue
+                    
+                    return self.collide(collision_item[0])
+        return []
 
     def can_think(self):
         if pyxel.frame_count - self.last_tick > self.tick_rate:
