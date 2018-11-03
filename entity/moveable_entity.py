@@ -3,7 +3,6 @@ from consts.colour import Colour
 from typing import List, Tuple
 from random import choice, randint
 from enum import Enum
-import game_state
 
 
 class MovementType(Enum):
@@ -43,12 +42,12 @@ class MovableEntity(Entity):
         self.target_offset = target_offset
         self.movement_direction = MovementDirection.NONE
         
-    def think(self):
+    def think(self, frame_count):
         """
         If we can think then move
         :return:
         """
-        if super().think():
+        if super().think(frame_count):
             self.move()
 
     def move(self):

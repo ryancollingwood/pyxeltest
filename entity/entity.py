@@ -8,11 +8,12 @@ class Entity:
     all = {}
     grid = None
     
-    def __init__(self,
-                 x: int, y: int, height: int, width: int,
-                 base_colour: Colour, tick_rate: int = 5,
-                 is_solid: bool = True, parent_collection: List = None
-                 ):
+    def __init__(
+        self,
+        x: int, y: int, height: int, width: int,
+        base_colour: Colour, tick_rate: int = 5,
+        is_solid: bool = True, parent_collection: List = None
+        ):
         
         Entity.id += 1
         self.id = Entity.id
@@ -24,7 +25,7 @@ class Entity:
         self.half_height = height / 2
         self.half_width = width / 2
         self.base_colour = base_colour.value
-        self.last_tick = pyxel.frame_count
+        self.last_tick = None
         self.tick_rate = tick_rate
         self.is_solid = is_solid
         self.on_collide = None
@@ -71,6 +72,7 @@ class Entity:
         self.grid_pixels = Entity.grid.get_pos_for_pixels(self.x, self.y)
 
         # again check for collision
+        
         existing_entity_id = Entity.grid[self.middle] 
         if existing_entity_id != self.id:
             self.collide(existing_entity_id)
@@ -114,15 +116,18 @@ class Entity:
                     return self.collide(collision_item[0])
         return []
 
-    def can_think(self):
-        if pyxel.frame_count - self.last_tick > self.tick_rate:
+    def can_think(self, frame_count):
+        if self.last_tick is None:
+            return True
+
+        if frame_count - self.last_tick > self.tick_rate:
             return True
 
         return False
 
-    def think(self):
-        if self.can_think():
-            self.last_tick = pyxel.frame_count
+    def think(self, frame_count):
+        if self.can_think(frame_count):
+            self.last_tick = frame_count
             # this was added to get around current grid implementation
             # only support one thing in the data layer at a time
             self.refresh_dimensions()
@@ -130,13 +135,3 @@ class Entity:
             return False
         
         return True
-        
-    def draw(self):
-        
-        pyxel.rect(
-            self.x - self.half_width, self.y - self.half_height,
-            self.x + self.half_width, self.y + self.half_height,
-            self.base_colour
-            )
-
-
