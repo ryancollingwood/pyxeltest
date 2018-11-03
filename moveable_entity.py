@@ -8,6 +8,7 @@ import game_state
 
 
 class MovementType(Enum):
+    NONE = 0
     PATROL = 1
     CHASE = 2
 
@@ -55,6 +56,9 @@ class MovableEntity(Entity):
         :return:
         """
         result = False
+
+        if self.movement_type == MovementType.NONE:
+            return
     
         if self.movement_type == MovementType.CHASE:
             destination_entity = Entity.all[self.target]
@@ -212,7 +216,10 @@ class MovableEntity(Entity):
     
         directions = [self.middle]
         
+        # when more accurate collision dection is implemented additional
+        # points can be used
         if direction == MovementDirection.NORTH:
+            #directions = [self.top_left, self.top_middle, self.top_right]
             directions = [self.top_middle]
         elif direction == MovementDirection.WEST:
             #directions = [self.top_left, self.bottom_left, self.middle_left]
@@ -234,39 +241,6 @@ class MovableEntity(Entity):
                 #game_state.debug_message = str(collision_item[0].middle)
                 return collision_item
     
-        return []
-
-    def check_collision_point(self, search_x, search_y):
-        
-        # remove self from grid so we dont
-        # find ourselves
-        Entity.grid - self.id
-
-        collision_items = Entity.grid.query(
-            search_x, search_y, k = 8,
-            )
-    
-        # now add self back to grid
-        Entity.grid[self.x, self.x, self.id]
- 
-        if collision_items is not None:
-            print(self.id, collision_items)
-            # todo probably a list comprehension here         
-            for i, collision_item in enumerate(collision_items):
-                
-                if collision_item[0]:
-                    if collision_item[0] == 0:
-                        continue
-                    if collision_item[1] > self.width:
-                        continue
-                    if collision_item[0] != self.id:
-                        if collision_item[0] in Entity.all: 
-                            other_entity = Entity.all[collision_item[0]]
-                            if other_entity.on_collide is not None:
-                                other_entity.on_collide(other_entity, self)
-
-                            if other_entity.is_solid and i == 0:
-                                return [other_entity]   
         return []
 
     @staticmethod

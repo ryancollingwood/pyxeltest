@@ -87,24 +87,24 @@ class Entity:
                     return [other_entity]
         return []
 
-    def check_collision_point(self, search_x, search_y):
-        
+    def check_collision_point(self, search_x, search_y):      
         # remove self from grid so we dont
         # find ourselves
         Entity.grid - self.id
 
         collision_items = Entity.grid.query(
-            search_x, search_y, k = 2,
+            search_x, search_y, k = 2, distance_upper_bound = self.width
             )
     
         # now add self back to grid
         Entity.grid[self.x, self.x, self.id]
  
         if collision_items is not None:
-            print(self.id, collision_items)
+            # print(self.id, collision_items)
             # todo probably a list comprehension here         
             for i, collision_item in enumerate(collision_items):
-                
+                if not collision_item:
+                    continue
                 if collision_item[0]:
                     if collision_item[0] == 0:
                         continue
@@ -123,6 +123,9 @@ class Entity:
     def think(self):
         if self.can_think():
             self.last_tick = pyxel.frame_count
+            # this was added to get around current grid implementation
+            # only support one thing in the data layer at a time
+            self.refresh_dimensions()
         else:
             return False
         

@@ -38,6 +38,8 @@ class Grid():
         self.flat_pixel_positions = np.reshape(flat_pixel_positions, (int(len(flat_pixel_positions) / 2), -1))
         
         # for data storage in our grid - initialised to 0s
+        # TODO: how to handle many things at a grid position?
+        # perhaps a dictionary?
         self.data = np.zeros(y_max * x_max)
         
         # to find a position based on pixel position we'll use the scipy.spatial.KDTree data type
@@ -60,7 +62,7 @@ class Grid():
         x = item[0]
         y = item[1]
             
-        query_result = self.query_tree(x, y)
+        query_result = self.query_tree(x, y, k =1, distance_upper_bound = self.tile_size)
         
         if not query_result:
             raise ValueError(f"Pixel positions not found in grid! {x}, {y}")
@@ -84,7 +86,7 @@ class Grid():
             raise ValueError(f"Pixel positions not found in grid! {x}, {y}")
         
         # query_result[0] - The distances to the nearest neighbour
-        # query_result[1] - The locations of the neighbours
+        # query_result[1] - The locations of the neighbours        
         self.data[query_result[1]] = value
         return
     

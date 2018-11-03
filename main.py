@@ -24,6 +24,7 @@ class App:
         self.load_level()
         
         self.debug_message = ""
+        self.game_message = ""
         
         pyxel.run(self.update, self.draw)
 
@@ -53,6 +54,8 @@ class App:
                     self.add_speed_up(row_index, col_index)
                 elif col_value == "~":
                     self.add_carrot(row_index, col_index)
+                elif col_value == "X":
+                    self.add_end(row_index, col_index)
 
         self.start_rabbit()
 
@@ -66,6 +69,11 @@ class App:
         print("rabbit:", x, y)
         self.rabbit = MovableEntity(x, y, App.tile_size-2, App.tile_size-2, Colour.WHITE, 5, False, self.npcs)
 
+    def remove_item(self, item):
+        self.grid - item.id
+        if item in self.items:
+            self.items.remove(item)
+
     def add_speed_down(self, row, column):
         x, y = self.grid.get_pixel_center(row, column)
         item = Entity(x, y, App.tile_size-2, App.tile_size-2, Colour.RED, 5, False, self.items)
@@ -73,8 +81,7 @@ class App:
 
     def apply_speed_down(self, apply_from, apply_to):
         apply_to.tick_rate += 1
-        self.grid - apply_from.id
-        self.items.remove(apply_from)
+        self.remove_item(apply_from)
 
     def add_speed_up(self, row, column):
         x, y = self.grid.get_pixel_center(row, column)
@@ -83,8 +90,7 @@ class App:
 
     def apply_speed_up(self, apply_from, apply_to):
         apply_to.tick_rate -= 1
-        self.grid - apply_from.id
-        self.items.remove(apply_from)
+        self.remove_item(apply_from)
 
     def add_carrot(self, row, column):
         x, y = self.grid.get_pixel_center(row, column)
@@ -93,13 +99,19 @@ class App:
 
     def eat_carrot(self, carrot, eater):
         if eater.id != self.rabbit.id:
-            print(eater.id, self.rabbit.id)
             return
-        print("rabbit on carrot")
-        self.grid - carrot.id
-        self.items = [x for x in self.items if x.id != carrot.id]
-        print(self.items)
+        self.remove_item(carrot)
         self.score += 1
+
+    def add_end(self, row, column):
+        x, y = self.grid.get_pixel_center(row, column)
+        item = Entity(x, y, App.tile_size, App.tile_size, Colour.GREY, 5, False, self.items)
+        item.on_collide = self.check_end
+
+    def check_end(self, goal, other):
+        if other.id != self.rabbit.id:
+            return
+        self.game_message = "   YOU WIN!\r   press R to restart"
 
     def start_rabbit(self):
         self.rabbit.target_offset = App.tile_size * 2
@@ -139,6 +151,25 @@ class App:
             self.load_level()
         elif pyxel.btnr(pyxel.constants.KEY_LEFT_BUTTON):
             print(self.get_grid_data(pyxel.mouse_x, pyxel.mouse_y))
+        # rabbit cheat
+        elif pyxel.btnp(pyxel.constants.KEY_W, self.player.tick_rate, self.player.tick_rate):
+            self.rabbit.movement_type = MovementType.NONE
+            self.rabbit.target = None
+            self.rabbit.move_up()
+        elif pyxel.btnp(pyxel.constants.KEY_A, self.player.tick_rate, self.player.tick_rate):
+            self.rabbit.movement_type = MovementType.NONE
+            self.rabbit.target = None
+            self.rabbit.move_left()
+        elif pyxel.btnp(pyxel.constants.KEY_D, self.player.tick_rate, self.player.tick_rate):
+            self.rabbit.movement_type = MovementType.NONE
+            self.rabbit.target = None
+            self.rabbit.move_right()
+        elif pyxel.btnp(pyxel.constants.KEY_S, self.player.tick_rate, self.player.tick_rate):
+            self.rabbit.movement_type = MovementType.NONE
+            self.rabbit.target = None
+            self.rabbit.move_down()
+        elif pyxel.btnp(pyxel.constants.KEY_X, self.player.tick_rate, self.player.tick_rate):
+            self.start_rabbit()
 
 
     def draw(self):
@@ -156,7 +187,6 @@ class App:
                     str(item.id), 
                     Colour.BLACK.value
                     )
-
         del items
 
         npcs = self.npcs.copy()
@@ -186,6 +216,13 @@ class App:
             ), 
             Colour.PINK.value
         )
+
+        if self.game_message != "":
+            pyxel.text(
+                40, App.height/2,
+                self.game_message,
+                Colour.LIGHT_GREEN.value
+            )
 
         self.player.draw()
 
