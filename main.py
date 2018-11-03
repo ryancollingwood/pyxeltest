@@ -15,6 +15,8 @@ class App:
     
     def __init__(self):
         pyxel.init(App.width, App.height, caption = "PyxelTest", fps = 60, scale = 4)
+        MovableEntity.width_aspect_ratio = pyxel.width
+
         pyxel.mouse(True)
 
         self.grid = Grid(App.width, App.height, App.tile_size)
@@ -33,6 +35,7 @@ class App:
         self.items = []
         self.walls = []
         self.score = 0
+        self.game_message = ""
 
     def load_level(self):
         self.reset_game()
@@ -111,7 +114,7 @@ class App:
     def check_end(self, goal, other):
         if other.id != self.rabbit.id:
             return
-        self.game_message = "   YOU WIN!\r   press R to restart"
+        self.game_message = "YOU WIN! Press R to restart"
 
     def start_rabbit(self):
         self.rabbit.target_offset = App.tile_size * 2
@@ -150,7 +153,7 @@ class App:
         elif pyxel.btnr(pyxel.constants.KEY_R):
             self.load_level()
         elif pyxel.btnr(pyxel.constants.KEY_LEFT_BUTTON):
-            print(self.get_grid_data(pyxel.mouse_x, pyxel.mouse_y))
+            self.debug_x_y(pyxel.mouse_x, pyxel.mouse_y)
         # rabbit cheat
         elif pyxel.btnp(pyxel.constants.KEY_W, self.player.tick_rate, self.player.tick_rate):
             self.rabbit.movement_type = MovementType.NONE
@@ -171,11 +174,16 @@ class App:
         elif pyxel.btnp(pyxel.constants.KEY_X, self.player.tick_rate, self.player.tick_rate):
             self.start_rabbit()
 
+    def debug_x_y(self, x, y):
+        print(self.get_grid_data(x, y))
+        print(self.grid.query(
+            x, y, k = 8, distance_upper_bound = App.tile_size * 2
+        ))
 
     def draw(self):
         pyxel.cls(0)
 
-        draw_item_ids = True
+        draw_item_ids = False
         items = self.items.copy()
         for item in items:
             item.think()

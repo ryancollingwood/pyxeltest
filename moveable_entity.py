@@ -1,4 +1,3 @@
-import pyxel
 from entity import Entity
 from consts.colour import Colour
 from typing import List, Tuple
@@ -27,6 +26,8 @@ class MovementDirection(Enum):
 
 class MovableEntity(Entity):
     
+    width_aspect_ratio = 1
+
     def __init__(self,
                  x: int, y: int, height: int, width: int,
                  base_colour: Colour, tick_rate: int = 5,
@@ -205,8 +206,8 @@ class MovableEntity(Entity):
         if collide_entities is not None and len(collide_entities) == 0:
             Entity.grid - self.id
             self.movement_direction = new_direction
-            self.x = (self.x + x_magnitude) % pyxel.width
-            self.y = (self.y + y_magnitude) % pyxel.width
+            self.x = (self.x + x_magnitude) % MovableEntity.width_aspect_ratio
+            self.y = (self.y + y_magnitude) % MovableEntity.width_aspect_ratio
             result = True
             
         self.refresh_dimensions()
